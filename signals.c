@@ -18,10 +18,16 @@ void catch_int(int sig_num)
 
     /* prompt the user to tell us if to really
      * exit or not */
+
+    alarm( 10 );
+
+
     printf("\nReally exit? [Y/n]: ");
     fflush(stdout);
     fgets(answer, sizeof(answer), stdin);
+
     if (answer[0] == 'n' || answer[0] == 'N') {
+      alarm(0);
       printf("\nContinuing\n");
       fflush(stdout);
       /* 
@@ -45,6 +51,12 @@ void catch_tstp(int sig_num)
   fflush(stdout);
 }
 
+void catch_alrm(int sig_num) {
+  printf("\nUser taking too long to respond. Exiting...\n");
+  fflush(stdout);
+  exit(0);
+}
+
 int main(int argc, char* argv[])
 {
   struct sigaction sa;
@@ -56,10 +68,16 @@ int main(int argc, char* argv[])
   sa.sa_flags = 0;
 
   /* set signal handlers */
-  sa.sa_handler = catch_int;
-  sigaction( SIGINT, &sa, NULL );
   sa.sa_handler = catch_tstp;
   sigaction( SIGTSTP, &sa, NULL );
+
+  sigdelset( &mask_set, SIGALRM );
+  sa.sa_mask = mask_set;
+  sa.sa_handler = catch_int;
+  sigaction( SIGINT, &sa, NULL );
+
+  sa.sa_handler = catch_alrm;
+  sigaction( SIGALRM, &sa, NULL );
 
   while(1) pause();
 
